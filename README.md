@@ -1,8 +1,8 @@
 # OpenDwarfFortress_v0.2
-Refonte du projet ODF avec pyglet (au lieu de pygame).
-L'objectif est de creer clone du jeu Dwarf Fortress en Open Source en améliorant l'interface et en ajoutant des fonctionnalitées tout en conservant la profondeur de jeu. Vous pouvez voir un exemple de monde generé dans le dossier Capture.
+Refonte du projet ODF avec pyglet (au lieu de pygame).  
+L'objectif est de creer clone du jeu Dwarf Fortress en Open Source en améliorant l'interface et en ajoutant des fonctionnalitées tout en conservant la profondeur de jeu. Vous pouvez voir un exemple de monde generé dans le dossier Capture.  
 
-Pour comprendre le code rendez vous sur le wiki : http://gnu-bricoleur.tuxfamily.org/dokuwiki/doku.php?id=start
+Pour comprendre le code rendez vous sur le wiki : http://gnu-bricoleur.tuxfamily.org/dokuwiki/doku.php?id=start  
 
 Et pour suivre l'avancement du projet, passez sur mon blog : http://gnu-bricoleur.tuxfamily.org/  
   
@@ -15,12 +15,11 @@ pip install -r requirements.txt
 python main.py  
 
 ##Pour jouer :  
-	-ZQSD pour se déplacer  
-	-TAB pour voler  
-	-clic droit pour poser un cube (selection dans l'inventaire avec le pavé numérique)  
-	-clic gauche pour detruire un cube  
-	-C pour prendre une capture  
-
+	-ZQSD pour se déplacer
+	-TAB pour voler
+	-clic droit pour poser un cube (selection dans l'inventaire avec le pavé numérique)
+	-clic gauche pour detruire un cube
+	-C pour prendre une capture 
 
 
 ##Modifications :
@@ -39,4 +38,10 @@ python main.py
 	-ajout d'une seed pour la generation
 	-clavier AZERTY
 
+
+## Crédits
+OpenDwarfFortress est Open Source sous licences GPL (voir le fichier LICENCE)  
+Si vous réutilisez mon code, je souhaite être crédité et si possible recevoir un message (ca fait plaisir d'avoir été utile).  
+
+Les textures sont celles de YOGSCAST (Open Source). Le texture pack de base Minecraft est aussi présent dans le dossier Images, utile pour les tests, il n'est probablement pas sous licences libre mais étant disponible partout sur internet, je ne pense pas faire du tort à Mojang. Je n'en réclame pas crédit !   
 La partie graphique du programme est basée sur le programme Open-Source de Michael Fogleman voir https://github.com/fogleman/Minecraft
