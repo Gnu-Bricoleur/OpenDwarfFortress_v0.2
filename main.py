@@ -51,7 +51,7 @@ def cube_vertices(x, y, z, n):
     ]
 
 
-def tex_coord(x, y, n=4):
+def tex_coord(x, y, n=16):
     """ Return the bounding vertices of the texture square.
 
     """
@@ -75,12 +75,15 @@ def tex_coords(top, bottom, side):
     return result
 
 
-TEXTURE_PATH = 'Images/texture.png'
+TEXTURE_PATH = 'Images/textureYOGSCAST-OS64.png'
 
-GRASS = tex_coords((1, 0), (0, 1), (0, 0))
-SAND = tex_coords((1, 1), (1, 1), (1, 1))
-BRICK = tex_coords((2, 0), (2, 0), (2, 0))
-STONE = tex_coords((2, 1), (2, 1), (2, 1))
+GRASS = tex_coords((0, 15), (2, 15), (3, 15))
+SAND = tex_coords((2, 14), (2, 14), (2, 14))
+BRICK = tex_coords((7, 15), (7, 15), (7, 15))
+STONE = tex_coords((0, 14), (0, 14), (0, 14))
+WATER = tex_coords((14, 2), (14, 2), (14, 2))
+STONED = tex_coords((1, 15), (1, 15), (1, 15))
+
 
 FACES = [
     ( 0, 1, 0),
@@ -170,8 +173,17 @@ class Model(object):
             for z in xrange(-n, n + 1, s):
                 # create a layer stone an grass everywhere.
                 hauteur = int(snoise3(x / freq, z / freq,graine, octaves,persistance) * 14.0 + 15.0)
-                for increment in xrange(0,hauteur,1):
-                    self.add_block((x, increment , z), GRASS, immediate=False)
+                if hauteur >= 20:
+                    for increment in xrange(0,hauteur,1):
+                        self.add_block((x, increment , z), STONED, immediate=False)
+                if hauteur <= 10:
+                    for increment in xrange(0,hauteur,1):
+                        self.add_block((x, increment , z), SAND, immediate=False)
+                    for increment in xrange(hauteur, 10, 1):
+                        self.add_block((x, increment , z), WATER, immediate=False)
+                if 10 < hauteur < 20:
+                    for increment in xrange(0,hauteur,1):
+                        self.add_block((x, increment , z), GRASS, immediate=False)
 #                self.add_block((x, y - 2, z), GRASS, immediate=False)
                 self.add_block((x, y - 3, z), STONE, immediate=False)
                 if x in (-n, n) or z in (-n, n):
@@ -459,7 +471,7 @@ class Window(pyglet.window.Window):
 
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (0, int(snoise3(0,0,graine, octaves,persistance) * 14.0 + 15.0), 0)
+        self.position = (0, int(snoise3(0,0,graine, octaves,persistance) * 14.0 + 15.0)+2, 0)
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -479,7 +491,7 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [BRICK, GRASS, SAND]
+        self.inventory = [BRICK, GRASS, SAND, WATER, STONED]
 
         # The current block the user can place. Hit num keys to cycle.
         self.block = self.inventory[0]

@@ -25,6 +25,13 @@ Pour jouer :
 
 Modifications :
 
+Le 2015/12/13 :
+	-compatibilite avec texture minecraft
+	-augmentation blocs ( eau et roc)
+	-generation plus realiste
+	-correction bug seed terrain plat
+	-correction bug apparition dans un bloc
+
 Le 2015/12/12 :
 	-empecher la capture de la souris pendant le chargement
 	-fonctionnalitée de capture d'écran
