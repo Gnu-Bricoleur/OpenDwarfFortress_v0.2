@@ -33,7 +33,8 @@ PLAYER_HEIGHT = 2
 
 # Mes variables globales 
 octaves=5
-graine = int(time.time())
+tps=time.time()/1000.0
+graine = (tps-int(tps))*1000.0
 persistance=0.25
 
 def cube_vertices(x, y, z, n):
