@@ -37,6 +37,7 @@ tps=time.time()/1000.0
 graine = (tps-int(tps))*1000.0
 persistance=0.25
 
+
 def cube_vertices(x, y, z, n):
     """ Return the vertices of the cube at position x, y, z with size 2*n.
 
@@ -49,6 +50,21 @@ def cube_vertices(x, y, z, n):
         x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n,  # front
         x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n,  # back
     ]
+
+
+def object_vertices(x, y, z, n):
+    """ Return the vertices of the cube at position x, y, z with size 2*n.
+
+    """
+    return [
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+    ]
+
 
 
 def tex_coord(x, y, n=16):
@@ -75,7 +91,7 @@ def tex_coords(top, bottom, side):
     return result
 
 
-TEXTURE_PATH = 'Images/textureYOGSCAST-OS64.png'
+TEXTURE_PATH = 'Images/textureYOGSCAST-OS.png'
 
 GRASS = tex_coords((0, 15), (2, 15), (3, 15))
 SAND = tex_coords((2, 14), (2, 14), (2, 14))
@@ -83,7 +99,11 @@ BRICK = tex_coords((7, 15), (7, 15), (7, 15))
 STONE = tex_coords((0, 14), (0, 14), (0, 14))
 WATER = tex_coords((14, 2), (14, 2), (14, 2))
 STONED = tex_coords((1, 15), (1, 15), (1, 15))
-
+BUISSON = tex_coords((5,12),(5,12),(5,12))
+DIRT = tex_coords((2, 15),(2, 15),(2, 15))
+FLOWER = tex_coords((12,15),(12,15),(12,15))
+TRONC = tex_coords((5,14),(5,14),(4,14))
+FEUILLAGE = tex_coords((5,7),(5,7),(5,7))
 
 FACES = [
     ( 0, 1, 0),
@@ -147,6 +167,12 @@ class Model(object):
         # Same mapping as `world` but only contains blocks that are shown.
         self.shown = {}
 
+        # carte des biomes
+        self.biomes = {}
+        
+        # carte des points d'interets
+        self.interet = {}
+
         # Mapping from position to a pyglet `VertextList` for all shown blocks.
         self._shown = {}
 
@@ -159,13 +185,13 @@ class Model(object):
 
         self._initialize()
 
-    def _initialize(self):
-        """ Initialize the world by placing all the blocks.
-
-        """
+    def creer_monde(self):
         freq = 16.0 * octaves
         increment=0
         hauteur=0
+        taillebiome=0
+        indexbiome=0
+        biomecourant=0
         n = 80  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
@@ -175,21 +201,101 @@ class Model(object):
                 hauteur = int(snoise3(x / freq, z / freq,graine, octaves,persistance) * 14.0 + 15.0)
                 if hauteur >= 20:
                     for increment in xrange(0,hauteur,1):
-                        self.add_block((x, increment , z), STONED, immediate=False)
+                        self.biome_montagne(x,increment,z)
                 if hauteur <= 10:
                     for increment in xrange(0,hauteur,1):
                         self.add_block((x, increment , z), SAND, immediate=False)
                     for increment in xrange(hauteur, 10, 1):
                         self.add_block((x, increment , z), WATER, immediate=False)
                 if 10 < hauteur < 20:
-                    for increment in xrange(0,hauteur,1):
-                        self.add_block((x, increment , z), GRASS, immediate=False)
+#                    if indexbiome == taillebiome:
+#                        taillebiome = 0
+#                        biomecourant =0
+                    if indexbiome <=taillebiome and biomecourant !=0:
+                        if biomecourant == 1:
+                            self.biome_plaine(x,hauteur,z)
+                            indexbiome=indexbiome+1
+                        elif biomecourant == 2:
+                            self.biome_foret(x,hauteur,z)
+                            indexbiome=indexbiome+1
+                    else :
+                        taillebiome,indexbiome,biomecourant=self.biome(taillebiome,indexbiome,biomecourant)
+                        if biomecourant == 1:
+                            self.biome_plaine(x,hauteur,z)
+                            indexbiome=indexbiome+1
+                        elif biomecourant == 2 :
+                            self.biome_foret(x,hauteur,z)
+                            indexbiome=indexbiome+1
+                    for increment in xrange(0,hauteur-1,1):
+                        self.add_block((x, increment , z), DIRT, immediate=False)
 #                self.add_block((x, y - 2, z), GRASS, immediate=False)
                 self.add_block((x, y - 3, z), STONE, immediate=False)
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
                     for dy in xrange(-2, 3):
                         self.add_block((x, y + dy, z), STONE, immediate=False)
+
+
+    def biome(self,taillebiome,indexbiome,biomecourant):
+        if taillebiome == 0:
+            taillebiome = random.randint(10000,20000)
+        if biomecourant == 0:
+            if random.randint(1,5) == 3:
+                biomecourant = 2
+            else:
+                biomecourant = 1
+        return taillebiome,indexbiome,biomecourant
+
+
+    def biome_montagne(self,x,y,z):
+        self.add_block((x, y , z), STONED, immediate=False)
+        self.biomes[(x,y,z)]='MONTAGNE'
+        
+    def biome_plaine(self,x,y,z):
+        self.add_block((x, y-1 , z), GRASS, immediate=False)
+        if random.randint(1,250)==2:
+            self.add_block((x, y , z), BUISSON, immediate=False)
+        elif random.randint(1,10)==2:
+            self.add_block((x, y , z), FLOWER, immediate=False)
+        elif random.randint(1,250)==5:
+            self.arbre(x, y , z)
+        self.biomes[(x,y,z)]='PLAINE'
+    
+    def biome_foret(self,x,y,z):
+        self.add_block((x, y-1 , z), GRASS, immediate=False)
+        if random.randint(1,5)==2:
+            self.add_block((x, y , z), BUISSON, immediate=False)
+        elif random.randint(1,100)==2:
+            self.add_block((x, y , z), FLOWER, immediate=False)
+        elif random.randint(1,25)==5:
+            self.arbre(x, y , z)
+        self.biomes[(x,y,z)]='FORET'
+
+
+    def arbre(self,xo,yo,zo) :
+#        self.add_block((x, hauteur , z), TRONC, immediate=False)
+        taillearbre=random.randint(5,10)
+        for i in xrange(0, taillearbre, 1):
+            if taillearbre > 8:
+                self.add_block((xo+1, i+yo , zo), TRONC, immediate=False)
+                self.add_block((xo+1, i+yo , zo+1), TRONC, immediate=False)
+                self.add_block((xo, i+yo , zo+1), TRONC, immediate=False)
+            self.add_block((xo, i+yo , zo), TRONC, immediate=False)
+        rayonfeuillage=random.randint(2,4)+int(taillearbre/3)
+        for y in xrange(yo-rayonfeuillage+taillearbre, yo+rayonfeuillage+taillearbre, 1):
+            for x in xrange(xo-rayonfeuillage,xo+rayonfeuillage , 1):
+                for z in xrange(zo-rayonfeuillage,zo+rayonfeuillage , 1):
+                    if (y-yo)**2+(x-xo)**2+(z-zo)**2 < rayonfeuillage**2:
+                        self.add_block((x, y+taillearbre-3, z), FEUILLAGE, immediate=False)
+                    if math.ceil((y-yo)**2+(x-xo)**2+(z-zo)**2) == rayonfeuillage**2 and random.randint(1,10)>8:
+                        self.add_block((x, y+taillearbre-3, z), FEUILLAGE, immediate=False)
+
+
+    def _initialize(self):
+        """ Initialize the world by placing all the blocks.
+
+        """
+        self.creer_monde()
 
         # generate the hills randomly
 #        o = n - 10
@@ -210,6 +316,8 @@ class Model(object):
 #                            continue
 #                        self.add_block((x, y, z), t, immediate=False)
 #                s -= d  # decrement side lenth so hills taper off
+
+
 
     def hit_test(self, position, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
@@ -245,7 +353,7 @@ class Model(object):
         """
         x, y, z = position
         for dx, dy, dz in FACES:
-            if (x + dx, y + dy, z + dz) not in self.world:
+            if ((x + dx, y + dy, z + dz) not in self.world) or (self.world[(x + dx, y + dy, z + dz)]==BUISSON) or (self.world[(x + dx, y + dy, z + dz)]==FLOWER): #mettre le non du bloc de petits blocs (voir en partie a travers)  
                 return True
         return False
 
@@ -341,13 +449,44 @@ class Model(object):
 
         """
         x, y, z = position
-        vertex_data = cube_vertices(x, y, z, 0.5)
-        texture_data = list(texture)
-        # create vertex list
-        # FIXME Maybe `add_indexed()` should be used instead
-        self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
-            ('v3f/static', vertex_data),
-            ('t2f/static', texture_data))
+        if texture == BUISSON :
+            vertex_data = cube_vertices(x, y+0.1, z, 0.4)
+            texture_data = list(texture)
+            # create vertex list
+            # FIXME Maybe `add_indexed()` should be used instead
+            self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
+                ('v3f/static', vertex_data),
+                ('t2f/static', texture_data))
+            vertex_data = cube_vertices(x, y-0.4, z, 0.1)
+            texture_data = list(TRONC)
+            # create vertex list
+            # FIXME Maybe `add_indexed()` should be used instead
+            self._shown[(x,y+100,z)] = self.batch.add(24, GL_QUADS, self.group,
+                ('v3f/static', vertex_data),
+                ('t2f/static', texture_data))
+        elif texture == FLOWER :
+            vertex_data = cube_vertices(x, y-0.1, z, 0.2)
+            texture_data = list(texture)
+            # create vertex list
+            # FIXME Maybe `add_indexed()` should be used instead
+            self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
+                ('v3f/static', vertex_data),
+                ('t2f/static', texture_data))
+            vertex_data = cube_vertices(x, y-0.4, z, 0.1)
+            texture_data = list(BUISSON)
+            # create vertex list
+            # FIXME Maybe `add_indexed()` should be used instead
+            self._shown[(x,y+100,z)] = self.batch.add(24, GL_QUADS, self.group,
+                ('v3f/static', vertex_data),
+                ('t2f/static', texture_data))
+        else :
+            vertex_data = cube_vertices(x, y, z, 0.5)
+            texture_data = list(texture)
+            # create vertex list
+            # FIXME Maybe `add_indexed()` should be used instead
+            self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
+                ('v3f/static', vertex_data),
+                ('t2f/static', texture_data))
 
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
@@ -371,6 +510,12 @@ class Model(object):
         """ Private implementation of the 'hide_block()` method.
 
         """
+        x, y, z = position
+        #if self.world[position] == BUISSON or self.world[position] == FLOWER:
+        try :
+            self._shown.pop((x,y+100,z)).delete()
+        except :
+            pass
         self._shown.pop(position).delete()
 
     def show_sector(self, sector):
@@ -471,7 +616,10 @@ class Window(pyglet.window.Window):
 
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (0, int(snoise3(0,0,graine, octaves,persistance) * 14.0 + 15.0)+2, 0)
+        if int(snoise3(0,0,graine, octaves,persistance) * 14.0 + 15.0) < 11:
+            self.position = (0, 12, 0)
+        else :
+            self.position = (0, int(snoise3(0,0,graine, octaves,persistance) * 14.0 + 15.0)+2, 0)
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -491,7 +639,7 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [BRICK, GRASS, SAND, WATER, STONED]
+        self.inventory = [BRICK, GRASS, SAND, WATER, STONED, BUISSON, DIRT]
 
         # The current block the user can place. Hit num keys to cycle.
         self.block = self.inventory[0]
@@ -664,7 +812,7 @@ class Window(pyglet.window.Window):
                     op = list(np)
                     op[1] -= dy
                     op[i] += face[i]
-                    if tuple(op) not in self.model.world:
+                    if tuple(op) not in self.model.world or self.model.world[tuple(op)] == BUISSON or self.model.world[tuple(op)] == FLOWER: #Mettre le nom du bloc traversable par le joueur
                         continue
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
@@ -911,7 +1059,7 @@ def setup():
 
 
 def main():
-    window = Window(width=800, height=600, caption='Pyglet', resizable=True)
+    window = Window(width=800, height=600, caption='ODFv0.2', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     window.set_exclusive_mouse(False)
     setup()
@@ -921,6 +1069,9 @@ def main():
 def initialisations():
     random.seed(graine)
 
+
+
 if __name__ == '__main__':
     initialisations()
     main()
+

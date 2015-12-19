@@ -24,6 +24,18 @@ python main.py
 
 ##Modifications :
 
+###Le 2015/12/19 :
+	-implémentation des biomes
+	-ajout des arbres (bug les gros arbres n'ont pas tjrs de feuilles)	
+
+###Le 2015/12/17 :
+	-apres 2 jours de galere avec la transparence, abandon et affichages de prtits blocs dans les gros blocs (BUISSON)
+	- affichage des FLOXERa meme le sol (modification du tileset nessecaire pour l'image de fleur)
+
+###Le 2015/12/15 :
+	-ajout FLOWER et DIRT (pas d'herbe sous terre)
+	-FLOWER en croisillon
+
 ###Le 2015/12/13 :
 	-compatibilite avec texture minecraft
 	-augmentation blocs ( eau et roc)
