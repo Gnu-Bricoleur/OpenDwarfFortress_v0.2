@@ -20,9 +20,13 @@ python main.py
 	-clic droit pour poser un cube (selection dans l'inventaire avec le pavé numérique)
 	-clic gauche pour detruire un cube
 	-C pour prendre une capture 
+	-W pour sauvegarder
 
 
 ##Modifications :
+
+###Le 2016/01/11 :
+	-après en avoir bien bavé, ajout d'un systeme de sauvegarde
 
 ###Le 2015/12/19 :
 	-implémentation des biomes
