@@ -261,13 +261,42 @@ class Model(object):
 					for dy in xrange(-2, 3):
 						self.add_block((x, y + dy, z), STONE, immediate=False)
 		make_map()
+		hauteurdungeon=4
+		altitudedungeon=2
 		print mapdungeon
 		xmax=len(mapdungeon)
 		ymax=len(mapdungeon[0])
-		for xdun in range(xmax):
-			for ydun in range(ymax):
+		for xdun in range(1,xmax-1):
+			for ydun in range(1,ymax-1):
 				if mapdungeon[xdun][ydun]==True:
-					self.add_block((xdun, 21, ydun), STONE, immediate=False)
+					self.add_block((xdun, altitudedungeon, ydun), STONED, immediate=False)
+					self.add_block((xdun, altitudedungeon+hauteurdungeon, ydun), STONED, immediate=False)
+				# OR est le ou non exclusif (xor pour le ou exclusif)
+				elif mapdungeon[xdun+1][ydun+1]==True: 
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+				elif mapdungeon[xdun-1][ydun-1]==True:
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+				elif mapdungeon[xdun+1][ydun-1]==True:
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+				elif mapdungeon[xdun-1][ydun+1]==True: 
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+				elif mapdungeon[xdun+1][ydun]==True: 
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+				elif mapdungeon[xdun-1][ydun]==True: 
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+				elif mapdungeon[xdun][ydun+1]==True: 
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+				elif mapdungeon[xdun][ydun-1]==True:
+					for hdun in range(hauteurdungeon):
+						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+
 
 
 	def biome(self,taillebiome,indexbiome,biomecourant):
@@ -1345,8 +1374,8 @@ def make_map():
 		w = random.randint(ROOM_MIN_SIZE, ROOM_MAX_SIZE)
 		h = random.randint(ROOM_MIN_SIZE, ROOM_MAX_SIZE)
 		#random position without going out of the boundaries of the map
-		x = random.randint(0, MAP_WIDTH - w - 1)
-		y = random.randint(0, MAP_HEIGHT - h - 1)
+		x = random.randint(1, MAP_WIDTH - w - 2)
+		y = random.randint(1, MAP_HEIGHT - h - 2)
 		
 		#"Rect" class makes rectangles easier to work with
 		new_room = Rect(x, y, w, h)

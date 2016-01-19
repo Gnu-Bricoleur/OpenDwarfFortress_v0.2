@@ -25,6 +25,9 @@ python main.py
 
 ##Modifications :
 
+###Le 2016/01/19 :
+	-ajout de dongeon labirynthiques
+
 ###Le 2016/01/11 :
 	-après en avoir bien bavé, ajout d'un systeme de sauvegarde
 
