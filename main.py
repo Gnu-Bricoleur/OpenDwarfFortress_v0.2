@@ -48,6 +48,8 @@ modifsasauvegarder = {}
 enregistrementdemodele = False
 positionpremierbloc=(0,0,0)
 modeleenenregistrement = {}
+positiondebutdongeonx,positiondebutdongeony=0,0
+
 
 #size of the map du dungeon
 MAP_WIDTH = 80
@@ -177,6 +179,7 @@ class Model(object):
 	global modifsasauvegarder
 	global positionpremierbloc
 	global enregistrementdemodele
+	global positiondebutdongeonx,positiondebutdongeony
 	def __init__(self):
 
 		# A Batch is a collection of vertex lists for batched rendering.
@@ -212,6 +215,7 @@ class Model(object):
 
 	def creer_monde(self):
 		global mapdungeon
+		global positiondebutdongeonx,positiondebutdongeony
 		freq = 16.0 * octaves
 		increment=0
 		hauteur=0
@@ -271,6 +275,8 @@ class Model(object):
 				if mapdungeon[xdun][ydun]==True:
 					self.add_block((xdun, altitudedungeon, ydun), STONED, immediate=False)
 					self.add_block((xdun, altitudedungeon+hauteurdungeon, ydun), STONED, immediate=False)
+					for hdun in range(hauteurdungeon-1):
+						self.remove_block((xdun, altitudedungeon+hdun+1, ydun),immediate=False)
 				# OR est le ou non exclusif (xor pour le ou exclusif)
 				elif mapdungeon[xdun+1][ydun+1]==True: 
 					for hdun in range(hauteurdungeon):
@@ -296,8 +302,18 @@ class Model(object):
 				elif mapdungeon[xdun][ydun-1]==True:
 					for hdun in range(hauteurdungeon):
 						self.add_block((xdun, altitudedungeon+hdun, ydun), STONED, immediate=False)
+		hauteuracces = int(snoise3(positiondebutdongeonx / freq, positiondebutdongeony / freq,graine, octaves,persistance) * 14.0 + 15.0)
+		for acces in range(altitudedungeon,hauteur):
+			self.remove_block((positiondebutdongeonx,acces,positiondebutdongeony))
+		entre=self.loadmodeleenregistre('maison')
+		for elements in entre:
+			self.add_block((elements[0]+positiondebutdongeonx,elements[1]+hauteuracces,elements[2]+positiondebutdongeony), entre[elements], immediate=False)
 
 
+	def loadmodeleenregistre(self,nomModele):
+		nom='Mesmodeles/'+nomModele+'.p'
+		dico=pickle.load(file(nom))
+		return dico
 
 	def biome(self,taillebiome,indexbiome,biomecourant):
 		if taillebiome == 0:
@@ -507,12 +523,15 @@ class Model(object):
 			del modifsasauvegarder[position]
 		except:
 			modifsasauvegarder[position]="pasblocpasbloc"
-		del self.world[position]
-		self.sectors[sectorize(position)].remove(position)
-		if immediate:
-			if position in self.shown:
-				self.hide_block(position)
-			self.check_neighbors(position)
+		if position in self.world:
+			del self.world[position]
+			self.sectors[sectorize(position)].remove(position)
+			if immediate:
+				if position in self.shown:
+					self.hide_block(position)
+				self.check_neighbors(position)
+		else:
+			pass
 
 	def check_neighbors(self, position):
 		""" Check all blocks surrounding `position` and ensure their visual
@@ -1364,6 +1383,7 @@ def create_v_tunnel(y1, y2, x):
  
 def make_map():
 	global mapdungeon, player 
+	global positiondebutdongeonx,positiondebutdongeony
 	#fill map with "blocked" tiles
 	 
 	rooms = []
@@ -1397,7 +1417,7 @@ def make_map():
 			(new_x, new_y) = new_room.center()
 			
 			if num_rooms == 0:
-				#this is the first room, where the player starts at
+				positiondebutdongeonx,positiondebutdongeony=new_x,new_y#this is the first room, where the player starts at
 				pass
 			else:
 				#all rooms after the first:

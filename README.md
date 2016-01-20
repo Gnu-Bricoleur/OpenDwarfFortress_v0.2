@@ -25,8 +25,11 @@ python main.py
 
 ##Modifications :
 
+###Le 2016/01/20 :
+	-ajout de points d'acces aux dongeons
+
 ###Le 2016/01/19 :
-	-ajout de dongeon labirynthiques
+	-ajout de dongeons labirynthiques
 
 ###Le 2016/01/11 :
 	-après en avoir bien bavé, ajout d'un systeme de sauvegarde
