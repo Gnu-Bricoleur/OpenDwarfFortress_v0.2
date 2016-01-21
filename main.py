@@ -49,6 +49,12 @@ enregistrementdemodele = False
 positionpremierbloc=(0,0,0)
 modeleenenregistrement = {}
 positiondebutdongeonx,positiondebutdongeony=0,0
+dicoPNJ={}
+dicotrajectoirePNJ={}
+dicopositiondesPNJ={}
+#a mettre dans un fichier et automatiser le chargement
+dicoPNJ["premierpnj"]=((5,5),(7,5),(-5,-5))
+dicoPNJ["deuxiempnj"]=((6,-5),(3,4),(2,2))
 
 
 #size of the map du dungeon
@@ -129,6 +135,9 @@ DIRT = tex_coords((2, 15),(2, 15),(2, 15))
 FLOWER = tex_coords((12,15),(12,15),(12,15))
 TRONC = tex_coords((5,14),(5,14),(4,14))
 FEUILLAGE = tex_coords((5,7),(5,7),(5,7))
+PNJTETE = tex_coords((6,9),(8,8),(8,8))
+PNJCORP = tex_coords((6,8),(6,8),(6,8))
+
 
 FACES = [
 	( 0, 1, 0),
@@ -157,6 +166,40 @@ def normalize(position):
 	x, y, z = (int(round(x)), int(round(y)), int(round(z)))
 	return (x, y, z)
 
+def equadedroite(x1,y1,x2,y2):
+	#renvois le a et le b de y=ax+b
+	a=(y2-y1)/(x2-x1)
+	b=y2-(a*x1)
+	return a,b
+
+
+def generertrajectoire(PNJ):
+	#range dans un tableau la liste des coordonnes du PNJ
+	freq = 16.0 * octaves
+	trajectoire=[]
+	trajectemp=[]
+	ptsdepassage=dicoPNJ[PNJ]
+	for i in range(len(ptsdepassage)-1):
+		a,b=equadedroite(ptsdepassage[i][0],ptsdepassage[i][1],ptsdepassage[i+1][0],ptsdepassage[i+1][1])
+		x1,y1,x2,y2=ptsdepassage[i][0],ptsdepassage[i][1],ptsdepassage[i+1][0],ptsdepassage[i+1][1]
+		for x in range(x1,x2,1):
+			if (int(math.floor(x)),int(math.floor(a*x+b)))in trajectemp:
+				pass
+			else:
+				hauteur = int(snoise3(int(math.floor(x)) / freq, int(math.floor(a*x+b))/ freq,graine, octaves,persistance) * 14.0 + 15.0)
+				trajectemp.append((int(math.floor(x)),int(math.floor(a*x+b))))
+				trajectoire.append((int(math.floor(x)),hauteur,int(math.floor(a*x+b))))
+	a,b=equadedroite(ptsdepassage[-1][0],ptsdepassage[-1][1],ptsdepassage[0][0],ptsdepassage[0][1])
+	x1,y1,x2,y2=ptsdepassage[-1][0],ptsdepassage[-1][1],ptsdepassage[0][0],ptsdepassage[0][1]
+	for x in range(x1,x2,1):
+		if (int(math.floor(x)),int(math.floor(a*x+b)))in trajectemp:
+			pass
+		else:
+			hauteur = int(snoise3(int(math.floor(x)) / freq, int(math.floor(a*x+b))/ freq,graine, octaves,persistance) * 14.0 + 15.0)
+			trajectemp.append((int(math.floor(x)),int(math.floor(a*x+b))))
+			trajectoire.append((int(math.floor(x)),hauteur,int(math.floor(a*x+b))))
+	print trajectoire
+	return trajectoire
 
 def sectorize(position):
 	""" Returns a tuple representing the sector for the given `position`.
@@ -175,11 +218,14 @@ def sectorize(position):
 	return (x, 0, z)
 
 
+
+
 class Model(object):
 	global modifsasauvegarder
 	global positionpremierbloc
 	global enregistrementdemodele
 	global positiondebutdongeonx,positiondebutdongeony
+	global dicoPNJ
 	def __init__(self):
 
 		# A Batch is a collection of vertex lists for batched rendering.
@@ -212,6 +258,23 @@ class Model(object):
 		self.queue = deque()
 
 		self._initialize()
+
+
+	def deplacerPNJ(self):
+		for PNJ in dicoPNJ:
+			if dicopositiondesPNJ[PNJ] == len(dicotrajectoirePNJ[PNJ])-1:
+				pass
+			else:
+				temp=dicotrajectoirePNJ[PNJ]
+				dicopositiondesPNJ[PNJ]=dicopositiondesPNJ[PNJ]+1
+				pos=dicopositiondesPNJ[PNJ]
+				self.remove_block(temp[pos-1])
+				self.remove_block((temp[pos-1][0],temp[pos-1][1]+1,temp[pos-1][2]))
+				self.add_block(temp[pos], PNJCORP)
+				self.add_block((temp[pos][0],temp[pos][1]+1,temp[pos][2]), PNJTETE)
+
+
+
 
 	def creer_monde(self):
 		global mapdungeon
@@ -415,6 +478,12 @@ class Model(object):
 					self.remove_block(elt, immediate)
 				else:
 					self.add_block(elt, dico[elt], immediate=False)
+		for PNJ in dicoPNJ:
+			dicotrajectoirePNJ[PNJ]=generertrajectoire(PNJ)
+			temp=dicotrajectoirePNJ[PNJ]
+			self.add_block(temp[0], PNJCORP, immediate=False)
+			self.add_block((temp[0][0],temp[0][1]+1,temp[0][2]), PNJTETE, immediate=False)
+			dicopositiondesPNJ[PNJ]=0
 
 
 
@@ -731,7 +800,7 @@ class Model(object):
 
 
 class Window(pyglet.window.Window):
-	
+
 
 	global enregistrementdemodele
 
@@ -808,6 +877,26 @@ class Window(pyglet.window.Window):
 		# This call schedules the `update()` method to be called
 		# TICKS_PER_SEC. This is the main game event loop.
 		pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+		pyglet.clock.schedule_interval(self.appelerdeplacerPNJ, 1.0)
+
+	def appelerdeplacerPNJ(self,deltat):
+		Model.deplacerPNJ(self.model)
+	
+	
+	"""
+	def deplacerPNJ(self):
+		for PNJ in dicoPNJ:
+			if dicopositiondesPNJ[PNJ] == len(dicotrajectoirePNJ[PNJ]):
+				pass
+			else:
+				temp=dicotrajectoirePNJ[PNJ]
+				dicopositiondesPNJ[PNJ]=dicopositiondesPNJ[PNJ]+1
+				pos=dicopositiondesPNJ[PNJ]
+				Model.add_block(self.model,temp[pos], PNJCORP, immediate=False)
+				Model.add_block(self.model,(temp[pos][0],temp[pos][1]+1,temp[pos][2]), PNJTETE, immediate=False)
+
+	"""
+
 
 	def set_exclusive_mouse(self, exclusive):
 		""" If `exclusive` is True, the game will capture the mouse, if False

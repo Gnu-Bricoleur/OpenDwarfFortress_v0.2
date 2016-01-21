@@ -25,6 +25,9 @@ python main.py
 
 ##Modifications :
 
+###Le 2016/01/21 :
+	-ajout de "PNJ" suiveur de trajectoire en boucle mais problème dans la génération de trajectoire à partir de points d'interets
+
 ###Le 2016/01/20 :
 	-ajout de points d'acces aux dongeons
 
