@@ -22,6 +22,8 @@ SECTOR_SIZE = 16
 WALKING_SPEED = 5
 FLYING_SPEED = 15
 
+UNDEMILARGEURLONGUEURDUMONDE = 80
+
 GRAVITY = 20.0
 MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
 # To derive the formula for calculating jump speed, first solve
@@ -53,9 +55,10 @@ dicoPNJ={}
 dicotrajectoirePNJ={}
 dicopositiondesPNJ={}
 #a mettre dans un fichier et automatiser le chargement
-dicoPNJ["premierpnj"]=((5,5),(7,5),(-5,-5))
-dicoPNJ["deuxiempnj"]=((6,-5),(3,4),(2,2))
-
+"""
+dicoPNJ["premierpnj"]=((5,10),(10,5),(-5,-5))
+dicoPNJ["deuxiempnj"]=((3,-5),(4,15),(2,2))
+"""
 
 #size of the map du dungeon
 MAP_WIDTH = 80
@@ -169,7 +172,7 @@ def normalize(position):
 def equadedroite(x1,y1,x2,y2):
 	#renvois le a et le b de y=ax+b
 	a=(y2-y1)/(x2-x1)
-	b=y2-(a*x1)
+	b=y1-(a*x1)
 	return a,b
 
 
@@ -179,6 +182,7 @@ def generertrajectoire(PNJ):
 	trajectoire=[]
 	trajectemp=[]
 	ptsdepassage=dicoPNJ[PNJ]
+	"""
 	for i in range(len(ptsdepassage)-1):
 		a,b=equadedroite(ptsdepassage[i][0],ptsdepassage[i][1],ptsdepassage[i+1][0],ptsdepassage[i+1][1])
 		x1,y1,x2,y2=ptsdepassage[i][0],ptsdepassage[i][1],ptsdepassage[i+1][0],ptsdepassage[i+1][1]
@@ -200,6 +204,40 @@ def generertrajectoire(PNJ):
 			trajectoire.append((int(math.floor(x)),hauteur,int(math.floor(a*x+b))))
 	print trajectoire
 	return trajectoire
+	"""
+	for i in range(len(ptsdepassage)-1):
+		x1,y1,x2,y2=ptsdepassage[i][0],ptsdepassage[i][1],ptsdepassage[i+1][0],ptsdepassage[i+1][1]
+		a,b=equadedroite(x1,y1,x2,y2)
+		iterateur=x1
+		while iterateur <= x2:
+			carrex = int(math.floor(iterateur))
+			carrey = int(math.floor(iterateur*a+b))
+			if (carrex,carrey) in trajectemp:
+				pass
+			else:
+				hauteur = int(snoise3(carrex / freq, carrey/ freq,graine, octaves,persistance) * 14.0 + 15.0)
+				trajectemp.append((carrex,carrey))
+				trajectoire.append((carrex,hauteur,carrey))
+			iterateur=iterateur + 0.1
+	x1,y1,x2,y2=ptsdepassage[-1][0],ptsdepassage[-1][1],ptsdepassage[0][0],ptsdepassage[0][1]
+	a,b=equadedroite(x1,y1,x2,y2)
+	iterateur=x1
+	while iterateur <= x2:
+		carrex = int(math.floor(iterateur))
+		carrey = int(math.floor(iterateur*a+b))
+		if (carrex,carrey) in trajectemp:
+			pass
+		else:
+			hauteur = int(snoise3(carrex / freq, carrey/ freq,graine, octaves,persistance) * 14.0 + 15.0)
+			trajectemp.append((carrex,carrey))
+			trajectoire.append((carrex,hauteur,carrey))
+		iterateur=iterateur + 0.1
+	print trajectoire
+	return trajectoire
+
+
+
+
 
 def sectorize(position):
 	""" Returns a tuple representing the sector for the given `position`.
@@ -260,20 +298,58 @@ class Model(object):
 		self._initialize()
 
 
-	def deplacerPNJ(self):
+	def deplacerPNJ(self,xyz,positionjoueur):
+		"""
+		x,y,z=positionjoueur
+		dx,dy,dz = xyz
 		for PNJ in dicoPNJ:
-			if dicopositiondesPNJ[PNJ] == len(dicotrajectoirePNJ[PNJ])-1:
-				pass
-			else:
+			intermediaire = dicotrajectoirePNJ[PNJ]
+			if intermediaire[dicopositiondesPNJ[PNJ]] in self.shown:
 				temp=dicotrajectoirePNJ[PNJ]
-				dicopositiondesPNJ[PNJ]=dicopositiondesPNJ[PNJ]+1
-				pos=dicopositiondesPNJ[PNJ]
-				self.remove_block(temp[pos-1])
-				self.remove_block((temp[pos-1][0],temp[pos-1][1]+1,temp[pos-1][2]))
-				self.add_block(temp[pos], PNJCORP)
-				self.add_block((temp[pos][0],temp[pos][1]+1,temp[pos][2]), PNJTETE)
+				if dicopositiondesPNJ[PNJ] == len(dicotrajectoirePNJ[PNJ])-2:
+					self.remove_block(temp[-1])
+					self.remove_block((temp[-1][0],temp[-1][1]+1,temp[-1][2]))
+					dicopositiondesPNJ[PNJ] = 0
+				else:
+					dicopositiondesPNJ[PNJ]=dicopositiondesPNJ[PNJ]+1
+					pos=dicopositiondesPNJ[PNJ]
+					self.remove_block(temp[pos-1])
+					self.remove_block((temp[pos-1][0],temp[pos-1][1]+1,temp[pos-1][2]))
+					self.add_block(temp[pos], PNJCORP)
+					self.add_block((temp[pos][0],temp[pos][1]+1,temp[pos][2]), PNJTETE)
+			else:
+				self.incrementerPNJ(PNJ)
+		"""
+		for PNJ in dicoPNJ:
+			trajectoire=dicotrajectoirePNJ[PNJ]
+#			print  PNJ + " : " + str(len(trajectoire)) + " : " + str(dicopositiondesPNJ[PNJ])
+			if trajectoire[dicopositiondesPNJ[PNJ]] in self.shown:
+				if dicopositiondesPNJ[PNJ] == len(trajectoire)-1:
+					if trajectoire[-1] in self.world and (trajectoire[-1][0],trajectoire[-1][1]+1,trajectoire[-1][2]) in self.world:
+						self.remove_block(trajectoire[-1])
+						self.remove_block((trajectoire[-1][0],trajectoire[-1][1]+1,trajectoire[-1][2]))
+					dicopositiondesPNJ[PNJ]=0
+					self.add_block(trajectoire[0], PNJCORP)
+					self.add_block((trajectoire[0][0],trajectoire[0][1]+1,trajectoire[0][2]), PNJTETE)
+				else :
+					pos=dicopositiondesPNJ[PNJ]
+					if trajectoire[pos] in self.world and (trajectoire[pos][0],trajectoire[pos][1]+1,trajectoire[pos][2]) in self.world:
+						self.remove_block(trajectoire[pos])
+						self.remove_block((trajectoire[pos][0],trajectoire[pos][1]+1,trajectoire[pos][2]))
+					dicopositiondesPNJ[PNJ]=dicopositiondesPNJ[PNJ]+1
+					pos=dicopositiondesPNJ[PNJ]
+					self.add_block(trajectoire[pos], PNJCORP)
+					self.add_block((trajectoire[pos][0],trajectoire[pos][1]+1,trajectoire[pos][2]), PNJTETE)
+			else:
+				self.incrementerPNJ(PNJ)
 
 
+	def incrementerPNJ(self,PNJ):
+		trajectoire=dicotrajectoirePNJ[PNJ]
+		if dicopositiondesPNJ[PNJ] == len(trajectoire)-1:
+			dicopositiondesPNJ[PNJ]=0
+		else:
+			dicopositiondesPNJ[PNJ]=dicopositiondesPNJ[PNJ]+1
 
 
 	def creer_monde(self):
@@ -285,7 +361,7 @@ class Model(object):
 		taillebiome=0
 		indexbiome=0
 		biomecourant=0
-		n = 80  # 1/2 width and height of world
+		n = UNDEMILARGEURLONGUEURDUMONDE  # 1/2 width and height of world
 		s = 1  # step size
 		y = 0  # initial y height
 		for x in xrange(-n, n + 1, s):
@@ -330,7 +406,7 @@ class Model(object):
 		make_map()
 		hauteurdungeon=4
 		altitudedungeon=2
-		print mapdungeon
+#		print mapdungeon
 		xmax=len(mapdungeon)
 		ymax=len(mapdungeon[0])
 		for xdun in range(1,xmax-1):
@@ -463,6 +539,24 @@ class Model(object):
 
 
 
+	def remplirdicoPNJ(self):
+		nbrdePNJ = random.randint(10,20)
+		nbrdeptsdepassage = random.randint(3,7)
+		for iterat in range(nbrdePNJ):
+			listptsdepassage=[]
+			for itera in range(nbrdeptsdepassage):
+				x=random.randint(-UNDEMILARGEURLONGUEURDUMONDE-5,UNDEMILARGEURLONGUEURDUMONDE-5)
+				y=random.randint(-UNDEMILARGEURLONGUEURDUMONDE-5,UNDEMILARGEURLONGUEURDUMONDE-5)
+				if listptsdepassage != []:
+					while x == listptsdepassage[-1][0]:
+						x=random.randint(-UNDEMILARGEURLONGUEURDUMONDE-5,UNDEMILARGEURLONGUEURDUMONDE-5)
+				listptsdepassage.append((x,y))
+			dicoPNJ[iterat]=listptsdepassage
+
+
+
+
+
 	def _initialize(self):
 		""" Initialize the world by placing all the blocks.
 		
@@ -478,6 +572,7 @@ class Model(object):
 					self.remove_block(elt, immediate)
 				else:
 					self.add_block(elt, dico[elt], immediate=False)
+		self.remplirdicoPNJ()
 		for PNJ in dicoPNJ:
 			dicotrajectoirePNJ[PNJ]=generertrajectoire(PNJ)
 			temp=dicotrajectoirePNJ[PNJ]
@@ -879,8 +974,12 @@ class Window(pyglet.window.Window):
 		pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
 		pyglet.clock.schedule_interval(self.appelerdeplacerPNJ, 1.0)
 
+
+
 	def appelerdeplacerPNJ(self,deltat):
-		Model.deplacerPNJ(self.model)
+		xyz = self.get_sight_vector()
+		x,y,z=self.position
+		Model.deplacerPNJ(self.model,xyz,(x,y,z))
 	
 	
 	"""
